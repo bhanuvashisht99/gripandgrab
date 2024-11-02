@@ -2,12 +2,18 @@
 require('dotenv').config();
 const twilio = require('twilio');
 
-const client = twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN
-);
-console.log('Account SID:', accountSid);
-console.log('Auth Token:', authToken.substring(0, 5) + '...'); // Only log the first 5 characters for security
+// Get environment variables
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+
+// Verify environment variables are set
+if (!accountSid || !authToken || !twilioPhoneNumber) {
+    console.error('Missing required Twilio environment variables');
+}
+
+// Initialize Twilio client
+const client = twilio(accountSid, authToken);
 
 const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 const businessNumber = process.env.BUSINESS_WHATSAPP_NUMBER;
