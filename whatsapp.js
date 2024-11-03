@@ -4,34 +4,55 @@ const twilio = require('twilio');
 // Get environment variables
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-const fromNumber = `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`;
-const businessNumber = `whatsapp:${process.env.BUSINESS_WHATSAPP_NUMBER}`;
 
-// Debug log environment variables
-console.log('WhatsApp Configuration:', {
-    fromNumber,
-    businessNumber,
-    hasAccountSid: !!accountSid,
-    hasAuthToken: !!authToken
-});
+// Improved WhatsApp number formatting for Indian numbers
+const formatWhatsAppNumber = (phone) => {
+    // Remove all non-digits and any existing prefixes
+    let cleaned = phone.replace(/\D/g, '');
+    
+    // Remove leading zeros
+    cleaned = cleaned.replace(/^0+/, '');
+    
+    // Remove 'whatsapp:' or '+' if present
+    cleaned = cleaned.replace(/(whatsapp:|\+)/g, '');
+    
+    // Ensure number starts with 91 for India
+    if (!cleaned.startsWith('91')) {
+        cleaned = '91' + cleaned;
+    }
+    
+    // Format for WhatsApp API
+    return `whatsapp:+${cleaned}`;
+};
 
-// Initialize Twilio client if credentials are available
+// Initialize Twilio client
 const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
 
-const formatPhoneForWhatsApp = (phone) => {
-    const cleaned = phone.replace(/\D/g, '');
-    return `whatsapp:+${cleaned.startsWith('91') ? cleaned : '91' + cleaned}`;
-};
+// Format business numbers
+const fromNumber = formatWhatsAppNumber('918700107977');  // Your Twilio WhatsApp number
+const businessNumber = formatWhatsAppNumber('918448222454');  // Your business WhatsApp
+
+// Debug logging
+console.log('WhatsApp Numbers:', {
+    fromNumber,
+    businessNumber,
+    twilioConfigured: !!client
+});
 
 const sendWhatsAppBookingNotification = async (bookingData) => {
     try {
         if (!client) {
-            console.log('Twilio client not initialized - missing credentials');
+            console.log('Twilio client not initialized');
             return null;
         }
 
         const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
         
+        console.log('Sending booking notification:', {
+            from: fromNumber,
+            to: businessNumber
+        });
+
         const message = await client.messages.create({
             body: `New booking:\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
             from: fromNumber,
@@ -41,7 +62,7 @@ const sendWhatsAppBookingNotification = async (bookingData) => {
         console.log('Booking notification sent:', message.sid);
         return message.sid;
     } catch (error) {
-        console.error('Error sending booking notification:', error);
+        console.error('Booking notification error:', error?.message || error);
         return null;
     }
 };
@@ -50,29 +71,43 @@ const sendWhatsAppConfirmation = async (bookingData) => {
     try {
         if (!client) return { businessSid: null, userSid: null };
 
-        const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
-        const userWhatsApp = formatPhoneForWhatsApp(phone);
+        const { name, phone, preferredDate, preferredTime, location } = bookingData;
+        const userWhatsApp = formatWhatsAppNumber(phone);
 
-        // Send to business
+        console.log('Sending confirmations:', {
+            from: fromNumber,
+            business: businessNumber,
+            user: userWhatsApp
+        });
+
+        // Business notification
         const businessMsg = await client.messages.create({
-            body: `New booking:\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
+            body: `New Booking!\nName: ${name}\nPhone: ${phone}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
             from: fromNumber,
             to: businessNumber
         });
 
-        // Send to customer
+        console.log('Business notification sent:', businessMsg.sid);
+
+        // User confirmation
         const userMsg = await client.messages.create({
-            body: `Your Grip&Grab Fitness session is confirmed!\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}\n\nWe're excited to see you!`,
+            body: `Your Grip&Grab Fitness session is confirmed!\n\nDetails:\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}\n\nSee you soon! 💪`,
             from: fromNumber,
             to: userWhatsApp
         });
 
-        return { 
-            businessSid: businessMsg.sid, 
-            userSid: userMsg.sid 
+        console.log('User confirmation sent:', userMsg.sid);
+
+        return {
+            businessSid: businessMsg.sid,
+            userSid: userMsg.sid
         };
     } catch (error) {
-        console.error('WhatsApp confirmation error:', error);
+        console.error('WhatsApp confirmation error:', {
+            message: error?.message,
+            code: error?.code,
+            moreInfo: error?.moreInfo
+        });
         return { businessSid: null, userSid: null };
     }
 };
@@ -82,27 +117,22 @@ const sendWhatsAppContactNotification = async (contactData) => {
         if (!client) return null;
 
         const { name, email, message } = contactData;
-        
-        const msg = await client.messages.create({
-            body: `New Contact Form:\nName: ${name}\nEmail: ${email}\nMessage: ${message}`,
+
+        console.log('Sending contact notification:', {
             from: fromNumber,
             to: businessNumber
         });
 
+        const msg = await client.messages.create({
+            body: `📩 New Contact Form\n\nName: ${name}\nEmail: ${email}\nMessage: ${message}`,
+            from: fromNumber,
+            to: businessNumber
+        });
+
+        console.log('Contact notification sent:', msg.sid);
         return msg.sid;
     } catch (error) {
-        console.error('Contact notification error:', error);
-        return null;
-    }
-};
-
-const checkMessageStatus = async (messageSid) => {
-    try {
-        if (!client || !messageSid) return null;
-        const message = await client.messages(messageSid).fetch();
-        return message.status;
-    } catch (error) {
-        console.error('Status check error:', error);
+        console.error('Contact notification error:', error?.message || error);
         return null;
     }
 };
@@ -110,6 +140,5 @@ const checkMessageStatus = async (messageSid) => {
 module.exports = {
     sendWhatsAppBookingNotification,
     sendWhatsAppContactNotification,
-    checkMessageStatus,
     sendWhatsAppConfirmation
 };
