@@ -96,12 +96,9 @@ async function sendContactFormConfirmation(contactData) {
     console.log('Sending contact form confirmation to:', formattedPhone);
 
     try {
-        // Construct the custom confirmation message
-        const customMessage = `Hi ${name},\n\nThank you for your message: "${message}". Our team will get back to you shortly. Thank you for contacting Grip&Grab Fitness!`;
-
-        // Send the custom confirmation message to the user
+        // Using static message for testing
         const userMsg = await client.messages.create({
-            body: customMessage,  // Use a custom message body
+            body: `Hi ${name},\n\nThank you for your message: "${message}". Our team will get back to you shortly. Thank you for contacting Grip&Grab Fitness!`,  // Static message for testing
             from: process.env.TWILIO_WHATSAPP_NUMBER,
             to: `whatsapp:${formattedPhone}`
         });
