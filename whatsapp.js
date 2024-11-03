@@ -45,11 +45,14 @@ async function sendWhatsAppBookingNotification(bookingData) {
 }
 
 async function sendWhatsAppContactNotification(contactData) {
-    const { name, email, message } = contactData;
+    const { name, email, phone, message } = contactData;
 
     if (!businessNumber) {
         throw new Error('Business WhatsApp number is not defined in environment variables');
     }
+
+    // Log the incoming data for debugging
+    console.log('Contact Data:', JSON.stringify(contactData));
 
     try {
         console.log(`Attempting to send WhatsApp contact notification to business number: ${businessNumber}`);
@@ -58,7 +61,8 @@ async function sendWhatsAppContactNotification(contactData) {
             contentVariables: JSON.stringify({
                 1: name,
                 2: email,
-                3: message
+                3: phone,    // Ensure phone is correctly added
+                4: message    // Ensure message is correctly added
             }),
             from: fromNumber,
             to: businessNumber
@@ -70,7 +74,6 @@ async function sendWhatsAppContactNotification(contactData) {
         throw error;
     }
 }
-
 async function checkMessageStatus(messageSid) {
     try {
         const message = await client.messages(messageSid).fetch();
