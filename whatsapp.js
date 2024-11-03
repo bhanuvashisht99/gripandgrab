@@ -101,6 +101,7 @@ async function sendContactFormConfirmation(contactData) {
 async function sendWhatsAppConfirmation(bookingData) {
     const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
 
+    // Ensure the phone number is correctly formatted
     const formattedPhone = phone.startsWith('+') ? phone : 
                            phone.startsWith('91') ? '+' + phone :
                            '+91' + phone.replace(/^0+/, '');
@@ -108,31 +109,22 @@ async function sendWhatsAppConfirmation(bookingData) {
     console.log('Formatted phone number:', formattedPhone);
 
     try {
-        // Send booking confirmation to the user using the template
+        // Send booking confirmation to the user using Content SID
         const userMsg = await client.messages.create({
             from: process.env.TWILIO_WHATSAPP_NUMBER,
             to: `whatsapp:${formattedPhone}`,
-            template: {
-                namespace: 'your_namespace',
-                name: 'your_template_name',
-                language: { code: 'en_US' }, // Adjust to your template's language
-                components: [
-                    {
-                        type: 'body', 
-                        parameters: [
-                            { type: 'text', text: preferredDate },
-                            { type: 'text', text: preferredTime },
-                            { type: 'text', text: location }
-                        ]
-                    }
-                ]
-            }
+            contentSid: 'HX049fbd59ead54ed9423ab93d883806f1',  // Your Content SID
+            contentVariables: JSON.stringify({
+                1: preferredDate,
+                2: preferredTime,
+                3: location
+            })
         });
 
-        console.log('User confirmation sent successfully using template');
+        console.log('User confirmation sent successfully using contentSid');
         return { userSid: userMsg.sid };
     } catch (error) {
-        console.error('Error sending WhatsApp confirmation using template:', error);
+        console.error('Error sending WhatsApp confirmation using contentSid:', error);
         if (error.code) {
             console.error('Twilio error code:', error.code);
         }
