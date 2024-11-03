@@ -35,61 +35,75 @@ const sendContactFormConfirmation = async ({ name, email, message, phone }) => {
     }
 };
 
-const sendWhatsAppContactNotification = async ({ name, email, message }) => {
-    try {
-        if (!client) return null;
-
-        const msg = await client.messages.create({
-            body: `📩 New Contact Form:\nName: ${name}\nEmail: ${email}\nMessage: ${message}`,
-            from: fromNumber,
-            to: toNumber  // Send to your business number
-        });
-
-        console.log('Contact notification sent:', msg.sid);
-        return msg.sid;
-    } catch (error) {
-        console.error('Contact notification error:', error);
-        return null;
-    }
-};
-
 const sendWhatsAppBookingNotification = async (bookingData) => {
     try {
         if (!client) return null;
 
-        const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
-        
+        const { name, preferredDate, preferredTime, location } = bookingData;
+
+        // Using your approved template format
         const message = await client.messages.create({
-            body: `🏋️‍♂️ New Booking!\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
             from: fromNumber,
-            to: toNumber  // Send to your business number
+            to: toNumber,
+            body: `Your booking with Grip&Grab Fitness is confirmed!
+
+Date: ${preferredDate}
+Time: ${preferredTime}
+Location: ${location}
+
+What to bring:
+- Comfortable workout clothes
+- Water bottle
+- Towel`
         });
 
         console.log('Booking notification sent:', message.sid);
         return message.sid;
     } catch (error) {
         console.error('Booking notification error:', error);
+        if (error.code) {
+            console.error('Twilio error code:', error.code);
+            console.error('More info:', error.moreInfo);
+        }
+        return null;
+    }
+};
+
+const sendWhatsAppContactNotification = async ({ name, email, message, phone }) => {
+    try {
+        if (!client) return null;
+
+        // Using a similar format to the approved template
+        const msg = await client.messages.create({
+            from: fromNumber,
+            to: toNumber,
+            body: `New Contact Form Enquiry:
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Message: ${message}
+
+We will respond shortly.`
+        });
+
+        console.log('Contact notification sent:', msg.sid);
+        return msg.sid;
+    } catch (error) {
+        console.error('Contact notification error:', error);
+        if (error.code) {
+            console.error('Twilio error code:', error.code);
+        }
         return null;
     }
 };
 
 const sendWhatsAppConfirmation = async (bookingData) => {
     try {
-        if (!client) return { businessSid: null, userSid: null };
-
-        const { name, phone, preferredDate, preferredTime, location } = bookingData;
-
-        const businessMsg = await client.messages.create({
-            body: `🎯 New Booking!\nName: ${name}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
-            from: fromNumber,
-            to: toNumber  // Send to your business number
-        });
-
-        console.log('Business notification sent:', businessMsg.sid);
-
+        const notificationSid = await sendWhatsAppBookingNotification(bookingData);
         return {
-            businessSid: businessMsg.sid,
-            userSid: null // We'll implement user notification later
+            businessSid: notificationSid,
+            userSid: null // We'll add user notification later if needed
         };
     } catch (error) {
         console.error('WhatsApp confirmation error:', error);
