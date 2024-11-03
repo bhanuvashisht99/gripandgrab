@@ -1,5 +1,7 @@
-const API_BASE_URL = 'http://localhost:3000'; // Replace with your actual backend URL
-
+const API_BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000' 
+    : 'https://gripandgrab.onrender.com';
+    
 // Smooth scrolling for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
@@ -428,6 +430,7 @@ bookingForm.addEventListener('submit', function(e) {
         modal.style.display = 'none';
         alert('Booking submitted successfully!');
         bookingForm.reset();
+        calendar.unselect(); // Clear calendar selection
     })
     .catch(error => {
         console.error('Error submitting booking:', error);
@@ -448,8 +451,8 @@ document.getElementById('contact-form').addEventListener('submit', async functio
     const formObject = Object.fromEntries(formData.entries());
 
     try {
-        const response = await fetch('http://localhost:3000/api/contact', {
-            method: 'POST',
+        const response = await fetch(`${API_BASE_URL}/api/contact`, {
+                        method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
