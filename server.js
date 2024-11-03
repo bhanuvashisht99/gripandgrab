@@ -28,11 +28,18 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// app.use(cors({
+//   origin: process.env.NODE_ENV === 'production' 
+//     ? 'https://gripandgrab.onrender.com'
+//     : 'http://localhost:3000',
+//   credentials: true
+// }));
+// Update CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://gripandgrab.onrender.com'
-    : 'http://localhost:3000',
-  credentials: true
+  origin: '*', // Temporarily allow all origins for testing
+  methods: ['GET', 'POST'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Serve static files from root directory for now
@@ -54,52 +61,43 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
+// Contact form endpoint
 app.post('/api/contact', async (req, res) => {
   console.log('Received contact form submission:', req.body);
   try {
-    const { name, email, message, phone } = req.body;
-    
-    // Validate input
-    if (!name || !email || !message || !phone) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
+      const { name, email, message, phone } = req.body;
+      
+      // Validate input
+      if (!name || !email || !message || !phone) {
+          return res.status(400).json({ error: 'Missing required fields' });
+      }
+      
+      // Save to database
+      const collection = database.collection('contacts');
+      const result = await collection.insertOne({ 
+          name, 
+          email, 
+          message, 
+          phone, 
+          createdAt: new Date() 
+      });
 
-    const phoneRegex = /^(\+?91|0)?[6789]\d{9}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ error: 'Invalid phone number format' });
-    }
+      // Send single WhatsApp notification
+      const notificationResult = await sendWhatsAppContactNotification({ 
+          name, 
+          email, 
+          message, 
+          phone 
+      });
 
-    const collection = database.collection('contacts');
-    const result = await collection.insertOne({ 
-      name, 
-      email, 
-      message, 
-      phone, 
-      createdAt: new Date() 
-    });
-
-    // Send notifications
-    const [businessSid, userSid] = await Promise.all([
-      sendWhatsAppContactNotification({ name, email, message }),
-      sendContactFormConfirmation({ name, email, message, phone })
-    ]);
-
-    res.status(200).json({ 
-      message: 'Contact form submitted successfully', 
-      id: result.insertedId,
-      businessNotificationSid: businessSid,
-      userConfirmationSid: userSid
-    });
+      res.status(200).json({ 
+          message: 'Contact form submitted successfully', 
+          id: result.insertedId,
+          notifications: notificationResult
+      });
   } catch (error) {
-    console.error('Error submitting contact form:', error);
-    res.status(500).json({ 
-      error: 'An error occurred while submitting the form. Please try again.' 
-    });
+      console.error('Error submitting contact form:', error);
+      res.status(500).json({ error: error.message });
   }
 });
 
