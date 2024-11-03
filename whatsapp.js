@@ -17,7 +17,7 @@ const TEMPLATES = {
     
     // For Business Notifications
     BUSINESS_BOOKING_NOTIFICATION: 'HXab7321e2c1c7461bcf6e5a72025c0504',  // booking notifications
-    BUSINESS_CONTACT_NOTIFICATION: 'HXab7321e2c1c7461bcf6e5a72025c0504'   // contact notifications
+    BUSINESS_CONTACT_NOTIFICATION: 'HXf43e9657305d6c0cdc046e92f62491ac'   // contact notifications
 };
 
 async function sendWhatsAppContactNotification(contactData) {
