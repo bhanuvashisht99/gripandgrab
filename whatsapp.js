@@ -24,7 +24,7 @@ async function sendWhatsAppBookingNotification(bookingData) {
     try {
         console.log(`Attempting to send WhatsApp booking notification to business number: ${businessNumber}`);
         const twilioMessage = await client.messages.create({
-            contentSid: 'HX8f95c5e296590140df87c567dbe30953', // Your approved template for booking notifications to the business
+            contentSid: 'HXab7321e2c1c7461bcf6e5a72025c0504', // Your approved template for booking notifications to the business
             contentVariables: JSON.stringify({
                 1: name,
                 2: email,
@@ -54,7 +54,7 @@ async function sendWhatsAppContactNotification(contactData) {
     try {
         console.log(`Attempting to send WhatsApp contact notification to business number: ${businessNumber}`);
         const twilioMessage = await client.messages.create({
-            contentSid: 'HX229d54afb0afcefe7dcf774e3a1b2fc4', // Your approved template for contact notifications to the business
+            contentSid: 'HXf43e9657305d6c0cdc046e92f62491ac', // Your approved template for contact notifications to the business
             contentVariables: JSON.stringify({
                 1: name,
                 2: email,
@@ -95,7 +95,7 @@ async function sendContactFormConfirmation(contactData) {
     try {
         // Send confirmation to the user
         const userMsg = await client.messages.create({
-            contentSid: 'HXba0a8fc878d0f09b487b4d9ba288e1c2', // Your approved template for user confirmation
+            contentSid: 'HX8ca8967632645b3c9e201960c099707e', // Your approved template for user confirmation
             contentVariables: JSON.stringify({
                 1: name
             }),
@@ -127,7 +127,7 @@ async function sendWhatsAppConfirmation(bookingData) {
     try {
         // Send booking confirmation to the user using Content SID
         const userMsg = await client.messages.create({
-            contentSid: 'HX049fbd59ead54ed9423ab93d883806f1', // Your approved template for user booking confirmation
+            contentSid: 'HX3101ba5ae07c7fd8478bc5766354f2ec', // Your approved template for user booking confirmation
             contentVariables: JSON.stringify({
                 1: preferredDate,
                 2: preferredTime,
@@ -141,7 +141,7 @@ async function sendWhatsAppConfirmation(bookingData) {
 
         // Send booking notification to the business using the new template Content SID
         const businessMsg = await client.messages.create({
-            contentSid: 'HX8f95c5e296590140df87c567dbe30953', // Your approved template for business booking notifications
+            contentSid: 'HXab7321e2c1c7461bcf6e5a72025c0504', // Your approved template for business booking notifications
             contentVariables: JSON.stringify({
                 1: name,
                 2: email,
