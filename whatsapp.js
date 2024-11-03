@@ -23,27 +23,50 @@ const TEMPLATES = {
 async function sendWhatsAppContactNotification(contactData) {
     const { name, email, phone, message } = contactData;
 
-    if (!businessNumber) {
-        throw new Error('Business WhatsApp number is not defined');
-    }
+    // Format phone number consistently
+    const formattedPhone = phone.startsWith('+') ? phone : 
+                          phone.startsWith('91') ? '+' + phone :
+                          '+91' + phone.replace(/^0+/, '');
 
-    console.log('Contact Data:', JSON.stringify(contactData));
+    console.log('Processing contact form:', { name, email, formattedPhone, message });
 
     try {
-        console.log(`Sending WhatsApp contact notification to: ${businessNumber}`);
-        const twilioMessage = await client.messages.create({
-            contentSid: TEMPLATES.BUSINESS_CONTACT_NOTIFICATION,
-            contentVariables: JSON.stringify({
-                1: name,
-                2: email,
-                3: phone,
-                4: message
+        // Only send two messages: one to user and one to business
+        const [userMsg, businessMsg] = await Promise.all([
+            // User confirmation
+            client.messages.create({
+                contentSid: 'HX8ca8967632645b3c9e201960c099707e',  // User contact confirmation template
+                contentVariables: JSON.stringify({
+                    1: name,
+                    2: message
+                }),
+                from: fromNumber,
+                to: `whatsapp:${formattedPhone}`
             }),
-            from: fromNumber,
-            to: businessNumber
+
+            // Business notification
+            client.messages.create({
+                contentSid: 'HXf43e9657305d6c0cdc046e92f62491ac',  // Business contact notification template
+                contentVariables: JSON.stringify({
+                    1: name,
+                    2: email,
+                    3: formattedPhone,
+                    4: message
+                }),
+                from: fromNumber,
+                to: businessNumber
+            })
+        ]);
+
+        console.log('Contact notifications sent:', {
+            userSid: userMsg.sid,
+            businessSid: businessMsg.sid
         });
-        console.log('Contact notification sent:', twilioMessage.sid);
-        return twilioMessage.sid;
+
+        return {
+            userSid: userMsg.sid,
+            businessSid: businessMsg.sid
+        };
     } catch (error) {
         console.error('Contact notification error:', error);
         throw error;
@@ -103,55 +126,6 @@ async function sendWhatsAppConfirmation(bookingData) {
 }
 
 
-async function sendContactFormConfirmation(contactData) {
-    const { name, email, message, phone } = contactData;
-
-    const formattedPhone = phone.startsWith('+') ? phone : 
-                          phone.startsWith('91') ? '+' + phone :
-                          '+91' + phone.replace(/^0+/, '');
-
-    console.log('Processing contact form:', { 
-        name, 
-        phone: formattedPhone 
-    });
-
-    try {
-        // 1. Send confirmation to user
-        const userMsg = await client.messages.create({
-            contentSid: TEMPLATES.USER_CONTACT_CONFIRMATION,
-            contentVariables: JSON.stringify({
-                1: name,
-                2: message
-            }),
-            from: fromNumber,
-            to: `whatsapp:${formattedPhone}`
-        });
-        console.log('Contact confirmation sent to user:', userMsg.sid);
-
-        // 2. Send notification to business
-        const businessMsg = await client.messages.create({
-            contentSid: TEMPLATES.BUSINESS_CONTACT_NOTIFICATION,
-            contentVariables: JSON.stringify({
-                1: name,
-                2: email,
-                3: formattedPhone,
-                4: message
-            }),
-            from: fromNumber,
-            to: businessNumber
-        });
-        console.log('Contact notification sent to business:', businessMsg.sid);
-
-        return { userSid: userMsg.sid, businessSid: businessMsg.sid };
-    } catch (error) {
-        console.error('Contact notification error:', {
-            code: error.code,
-            message: error.message,
-            details: error.moreInfo
-        });
-        throw error;
-    }
-}
 
 async function checkMessageStatus(messageSid) {
     try {
@@ -166,7 +140,6 @@ async function checkMessageStatus(messageSid) {
 
 module.exports = {
     sendWhatsAppConfirmation,
-    sendContactFormConfirmation,
     checkMessageStatus,
     sendWhatsAppContactNotification
 };
