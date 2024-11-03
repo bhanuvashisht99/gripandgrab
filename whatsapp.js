@@ -104,33 +104,36 @@ async function sendWhatsAppConfirmation(bookingData) {
     // Ensure the phone number is in the correct format for Indian numbers
     const formattedPhone = phone.startsWith('+') ? phone : 
                            phone.startsWith('91') ? '+' + phone :
-                           '+91' + phone.replace(/^0+/, ''); // Remove leading zeros if any
+                           '+91' + phone.replace(/^0+/, '');
 
-    console.log('Formatted phone number:', formattedPhone); // For debugging
+    console.log('Formatted phone number:', formattedPhone);
 
     try {
-        // Send confirmation to the business
-        const businessMsg = await client.messages.create({
-            body: `New booking:\nName: ${name}\nEmail: ${email}\nPhone: ${formattedPhone}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
-            from: process.env.TWILIO_WHATSAPP_NUMBER,
-            to: process.env.BUSINESS_WHATSAPP_NUMBER
-        });
-
-        console.log('Business confirmation sent successfully');
-
-        // Send confirmation to the user
+        // Send booking confirmation to the user using the template
         const userMsg = await client.messages.create({
-            body: `Your Grip&Grab Fitness session is confirmed for ${preferredDate} at ${preferredTime}, ${location}. Reply with 'YES' to confirm.`,
             from: process.env.TWILIO_WHATSAPP_NUMBER,
-            to: `whatsapp:${formattedPhone}`
+            to: `whatsapp:${formattedPhone}`,
+            template: {
+                namespace: 'your_namespace',
+                name: 'your_template_name',
+                language: { code: 'en_US' }, // Adjust to your template's language
+                components: [
+                    {
+                        type: 'body', 
+                        parameters: [
+                            { type: 'text', text: preferredDate },
+                            { type: 'text', text: preferredTime },
+                            { type: 'text', text: location }
+                        ]
+                    }
+                ]
+            }
         });
 
-        console.log('User confirmation sent successfully');
-
-        return { businessSid: businessMsg.sid, userSid: userMsg.sid };
+        console.log('User confirmation sent successfully using template');
+        return { userSid: userMsg.sid };
     } catch (error) {
-        console.error('Error sending WhatsApp confirmation:', error);
-        console.error('Error details:', error.message);
+        console.error('Error sending WhatsApp confirmation using template:', error);
         if (error.code) {
             console.error('Twilio error code:', error.code);
         }
