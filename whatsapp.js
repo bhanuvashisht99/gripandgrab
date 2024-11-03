@@ -101,7 +101,6 @@ async function sendContactFormConfirmation(contactData) {
 async function sendWhatsAppConfirmation(bookingData) {
     const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
 
-    // Ensure the phone number is correctly formatted
     const formattedPhone = phone.startsWith('+') ? phone : 
                            phone.startsWith('91') ? '+' + phone :
                            '+91' + phone.replace(/^0+/, '');
@@ -113,7 +112,7 @@ async function sendWhatsAppConfirmation(bookingData) {
         const userMsg = await client.messages.create({
             from: process.env.TWILIO_WHATSAPP_NUMBER,
             to: `whatsapp:${formattedPhone}`,
-            contentSid: 'HX049fbd59ead54ed9423ab93d883806f1',  // Your Content SID
+            contentSid: 'HX049fbd59ead54ed9423ab93d883806f1', // Your Content SID for customer message
             contentVariables: JSON.stringify({
                 1: preferredDate,
                 2: preferredTime,
@@ -122,9 +121,19 @@ async function sendWhatsAppConfirmation(bookingData) {
         });
 
         console.log('User confirmation sent successfully using contentSid');
-        return { userSid: userMsg.sid };
+
+        // Send booking notification to the business
+        const businessMsg = await client.messages.create({
+            from: process.env.TWILIO_WHATSAPP_NUMBER,
+            to: `whatsapp:${process.env.BUSINESS_WHATSAPP_NUMBER}`, // Ensure this is set in your .env file
+            body: `New booking received!\nName: ${name}\nEmail: ${email}\nPhone: ${formattedPhone}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`
+        });
+
+        console.log('Business notification sent successfully');
+        
+        return { userSid: userMsg.sid, businessSid: businessMsg.sid };
     } catch (error) {
-        console.error('Error sending WhatsApp confirmation using contentSid:', error);
+        console.error('Error sending WhatsApp confirmation or business notification:', error);
         if (error.code) {
             console.error('Twilio error code:', error.code);
         }
