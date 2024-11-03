@@ -101,7 +101,6 @@ async function sendContactFormConfirmation(contactData) {
 async function sendWhatsAppConfirmation(bookingData) {
     const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
 
-    // Ensure the phone number is in the correct format for Indian numbers
     const formattedPhone = phone.startsWith('+') ? phone : 
                            phone.startsWith('91') ? '+' + phone :
                            '+91' + phone.replace(/^0+/, '');
@@ -137,7 +136,7 @@ async function sendWhatsAppConfirmation(bookingData) {
         if (error.code) {
             console.error('Twilio error code:', error.code);
         }
-        throw error;
+        throw new Error(`An error occurred while processing your booking. Twilio response: ${error.message}`);
     }
 }
 module.exports = { sendWhatsAppBookingNotification, sendWhatsAppContactNotification, checkMessageStatus, sendWhatsAppConfirmation,sendContactFormConfirmation };
