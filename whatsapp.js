@@ -21,31 +21,23 @@ async function sendWhatsAppBookingNotification(bookingData) {
         throw new Error('Business WhatsApp number is not defined in environment variables');
     }
 
-    // Format the phone number for WhatsApp
-    const formattedPhone = phone.startsWith('+') ? phone : 
-                           phone.startsWith('91') ? '+' + phone :
-                           '+91' + phone.replace(/^0+/, '');
-
     try {
         console.log(`Attempting to send WhatsApp booking notification to business number: ${businessNumber}`);
-        
-        // Send booking notification to the business
-        const businessMsg = await client.messages.create({
-            body: `New booking:\nName: ${name}\nEmail: ${email}\nPhone: ${formattedPhone}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
+        const twilioMessage = await client.messages.create({
+            contentSid: 'HX8f95c5e296590140df87c567dbe30953', // Your approved template for booking notifications to the business
+            contentVariables: JSON.stringify({
+                1: name,
+                2: email,
+                3: phone,
+                4: preferredDate,
+                5: preferredTime,
+                6: location
+            }),
             from: fromNumber,
-            to: businessNumber
+            to: businessNumber // This sends to your business WhatsApp number
         });
-        console.log('WhatsApp booking notification sent successfully:', businessMsg.sid);
-        
-        // Send booking confirmation to the user
-        const userMsg = await client.messages.create({
-            body: `Dear ${name}, your booking is confirmed for ${preferredDate} at ${preferredTime} in ${location}.`,
-            from: fromNumber,
-            to: `whatsapp:${formattedPhone}`
-        });
-        console.log('User confirmation sent successfully:', userMsg.sid);
-
-        return { userSid: userMsg.sid, businessSid: businessMsg.sid };
+        console.log('WhatsApp booking notification sent successfully:', twilioMessage.sid);
+        return twilioMessage.sid;
     } catch (error) {
         console.error('Error sending WhatsApp booking notification:', error);
         throw error;
@@ -53,37 +45,26 @@ async function sendWhatsAppBookingNotification(bookingData) {
 }
 
 async function sendWhatsAppContactNotification(contactData) {
-    const { name, email, message, phone } = contactData;
+    const { name, email, message } = contactData;
 
     if (!businessNumber) {
         throw new Error('Business WhatsApp number is not defined in environment variables');
     }
 
-    // Format the phone number for WhatsApp
-    const formattedPhone = phone.startsWith('+') ? phone : 
-                           phone.startsWith('91') ? '+' + phone :
-                           '+91' + phone.replace(/^0+/, '');
-
     try {
         console.log(`Attempting to send WhatsApp contact notification to business number: ${businessNumber}`);
-        
-        // Send contact notification to the business
-        const businessMsg = await client.messages.create({
-            body: `New contact form submission:\nName: ${name}\nEmail: ${email}\nMessage: ${message}`,
+        const twilioMessage = await client.messages.create({
+            contentSid: 'HX229d54afb0afcefe7dcf774e3a1b2fc4', // Your approved template for contact notifications to the business
+            contentVariables: JSON.stringify({
+                1: name,
+                2: email,
+                3: message
+            }),
             from: fromNumber,
             to: businessNumber
         });
-        console.log('WhatsApp contact notification sent successfully:', businessMsg.sid);
-
-        // Send confirmation to the user
-        const userMsg = await client.messages.create({
-            body: `Dear ${name}, we have received your query. Our team will get back to you shortly. Thank you for contacting Grip&Grab Fitness.`,
-            from: fromNumber,
-            to: `whatsapp:${formattedPhone}`
-        });
-        console.log('Contact form confirmation sent to user successfully:', userMsg.sid);
-
-        return { userSid: userMsg.sid, businessSid: businessMsg.sid };
+        console.log('WhatsApp contact notification sent successfully:', twilioMessage.sid);
+        return twilioMessage.sid;
     } catch (error) {
         console.error('Error sending WhatsApp contact notification:', error);
         throw error;
@@ -114,7 +95,10 @@ async function sendContactFormConfirmation(contactData) {
     try {
         // Send confirmation to the user
         const userMsg = await client.messages.create({
-            body: `Dear ${name}, we have received your query. Our team will get back to you shortly. Thank you for contacting Grip&Grab Fitness.`,
+            contentSid: 'HXba0a8fc878d0f09b487b4d9ba288e1c2', // Your approved template for user confirmation
+            contentVariables: JSON.stringify({
+                1: name
+            }),
             from: process.env.TWILIO_WHATSAPP_NUMBER,
             to: `whatsapp:${formattedPhone}`
         });
@@ -131,7 +115,6 @@ async function sendContactFormConfirmation(contactData) {
     }
 }
 
-
 async function sendWhatsAppConfirmation(bookingData) {
     const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
 
@@ -144,23 +127,21 @@ async function sendWhatsAppConfirmation(bookingData) {
     try {
         // Send booking confirmation to the user using Content SID
         const userMsg = await client.messages.create({
-            from: process.env.TWILIO_WHATSAPP_NUMBER,
-            to: `whatsapp:${formattedPhone}`,
-            contentSid: 'HX049fbd59ead54ed9423ab93d883806f1', // Your Content SID for customer message
+            contentSid: 'HX049fbd59ead54ed9423ab93d883806f1', // Your approved template for user booking confirmation
             contentVariables: JSON.stringify({
                 1: preferredDate,
                 2: preferredTime,
                 3: location
-            })
+            }),
+            from: process.env.TWILIO_WHATSAPP_NUMBER,
+            to: `whatsapp:${formattedPhone}`
         });
 
         console.log('User confirmation sent successfully using contentSid');
 
         // Send booking notification to the business using the new template Content SID
         const businessMsg = await client.messages.create({
-            from: process.env.TWILIO_WHATSAPP_NUMBER,
-            to: `whatsapp:${process.env.BUSINESS_WHATSAPP_NUMBER}`,
-            contentSid: 'HXb9a7cefdc2649bfd1f04c02d4690b05e', // Your new Content SID for business message
+            contentSid: 'HX8f95c5e296590140df87c567dbe30953', // Your approved template for business booking notifications
             contentVariables: JSON.stringify({
                 1: name,
                 2: email,
@@ -168,7 +149,9 @@ async function sendWhatsAppConfirmation(bookingData) {
                 4: preferredDate,
                 5: preferredTime,
                 6: location
-            })
+            }),
+            from: process.env.TWILIO_WHATSAPP_NUMBER,
+            to: `whatsapp:${process.env.BUSINESS_WHATSAPP_NUMBER}`
         });
 
         console.log('Business notification sent successfully:', businessMsg.sid);
