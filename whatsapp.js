@@ -20,6 +20,35 @@ const TEMPLATES = {
     BUSINESS_CONTACT_NOTIFICATION: 'HXf43e9657305d6c0cdc046e92f62491ac'   // contact notifications
 };
 
+async function sendWhatsAppContactNotification(contactData) {
+    const { name, email, phone, message } = contactData;
+
+    if (!businessNumber) {
+        throw new Error('Business WhatsApp number is not defined');
+    }
+
+    console.log('Contact Data:', JSON.stringify(contactData));
+
+    try {
+        console.log(`Sending WhatsApp contact notification to: ${businessNumber}`);
+        const twilioMessage = await client.messages.create({
+            contentSid: TEMPLATES.BUSINESS_CONTACT_NOTIFICATION,
+            contentVariables: JSON.stringify({
+                1: name,
+                2: email,
+                3: phone,
+                4: message
+            }),
+            from: fromNumber,
+            to: businessNumber
+        });
+        console.log('Contact notification sent:', twilioMessage.sid);
+        return twilioMessage.sid;
+    } catch (error) {
+        console.error('Contact notification error:', error);
+        throw error;
+    }
+}
 async function sendWhatsAppConfirmation(bookingData) {
     const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
 
@@ -139,5 +168,5 @@ module.exports = {
     sendWhatsAppConfirmation,
     sendContactFormConfirmation,
     checkMessageStatus,
-    
+    sendWhatsAppContactNotification
 };
