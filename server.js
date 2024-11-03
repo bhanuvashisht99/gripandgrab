@@ -64,52 +64,36 @@ app.get('/test-db', async (req, res) => {
 app.post('/api/contact', async (req, res) => {
   console.log('Received contact form submission:', req.body);
   try {
-    const { name, email, message, phone } = req.body;
-    
-    // Validate input
-    if (!name || !email || !message || !phone) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
+      const { name, email, message, phone } = req.body;
+      
+      // Validate input
+      if (!name || !email || !message || !phone) {
+          return res.status(400).json({ error: 'Missing required fields' });
+      }
 
-    const phoneRegex = /^(\+?91|0)?[6789]\d{9}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ error: 'Invalid phone number format' });
-    }
+      // Save to database
+      const collection = database.collection('contacts');
+      const result = await collection.insertOne({ 
+          name, email, message, phone, 
+          createdAt: new Date() 
+      });
 
-    const collection = database.collection('contacts');
-    const result = await collection.insertOne({ 
-      name, 
-      email, 
-      message, 
-      phone, 
-      createdAt: new Date() 
-    });
+      // Send notifications (only once)
+      const notifications = await sendWhatsAppContactNotification({ 
+          name, email, message, phone 
+      });
 
-    // Send notifications
-    const [businessSid, userSid] = await Promise.all([
-      sendWhatsAppContactNotification({ name, email, message }),
-      sendContactFormConfirmation({ name, email, message, phone })
-    ]);
-
-    res.status(200).json({ 
-      message: 'Contact form submitted successfully', 
-      id: result.insertedId,
-      businessNotificationSid: businessSid,
-      userConfirmationSid: userSid
-    });
+      res.status(200).json({ 
+          success: true,
+          message: 'Contact form submitted successfully',
+          id: result.insertedId,
+          notifications
+      });
   } catch (error) {
-    console.error('Error submitting contact form:', error);
-    res.status(500).json({ 
-      error: 'An error occurred while submitting the form. Please try again.' 
-    });
+      console.error('Error submitting contact form:', error);
+      res.status(500).json({ error: error.message });
   }
 });
-
 app.post('/api/book-session', async (req, res) => {
   console.log('Received booking request:', req.body);
   try {
