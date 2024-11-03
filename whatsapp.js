@@ -96,17 +96,17 @@ async function sendContactFormConfirmation(contactData) {
     console.log('Sending contact form confirmation to:', formattedPhone);
 
     try {
-        // Send confirmation to the user
+        // Construct the custom confirmation message
+        const customMessage = `Hi ${name},\n\nThank you for your message: "${message}". Our team will get back to you shortly. Thank you for contacting Grip&Grab Fitness!`;
+
+        // Send the custom confirmation message to the user
         const userMsg = await client.messages.create({
-            contentSid: 'HX8ca8967632645b3c9e201960c099707e', // Your approved template for user confirmation
-            contentVariables: JSON.stringify({
-                1: name
-            }),
+            body: customMessage,  // Use a custom message body
             from: process.env.TWILIO_WHATSAPP_NUMBER,
             to: `whatsapp:${formattedPhone}`
         });
 
-        console.log('Contact form confirmation sent successfully');
+        console.log('Contact form confirmation sent successfully:', userMsg.sid);
         return userMsg.sid;
     } catch (error) {
         console.error('Error sending contact form confirmation:', error);
@@ -117,7 +117,6 @@ async function sendContactFormConfirmation(contactData) {
         throw error;
     }
 }
-
 async function sendWhatsAppConfirmation(bookingData) {
     const { name, email, phone, preferredDate, preferredTime, location } = bookingData;
 
