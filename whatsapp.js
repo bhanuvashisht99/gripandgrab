@@ -6,19 +6,25 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
 
-// Format numbers
-const fromNumber = `whatsapp:+918700107977`;     // Your Twilio number
-const businessNumber = `whatsapp:+918448222454`; // Your business number
+// WhatsApp numbers (with proper formatting)
+const fromNumber = 'whatsapp:+918700107977';    // Twilio number for sending
+const toNumber = 'whatsapp:+918448222454';      // Your number for receiving
+
+// Debug log the numbers
+console.log('WhatsApp Numbers:', {
+    from: fromNumber,
+    to: toNumber,
+    hasClient: !!client
+});
 
 const sendContactFormConfirmation = async ({ name, email, message, phone }) => {
     try {
         if (!client) return null;
         
-        // Only send to business number to avoid same From/To error
         const msg = await client.messages.create({
             body: `New Contact Form:\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}`,
             from: fromNumber,
-            to: fromNumber  // Using fromNumber temporarily until businessNumber is verified
+            to: toNumber  // Send to your business number
         });
 
         console.log('Contact form confirmation sent:', msg.sid);
@@ -36,7 +42,7 @@ const sendWhatsAppContactNotification = async ({ name, email, message }) => {
         const msg = await client.messages.create({
             body: `📩 New Contact Form:\nName: ${name}\nEmail: ${email}\nMessage: ${message}`,
             from: fromNumber,
-            to: fromNumber  // Using fromNumber temporarily until businessNumber is verified
+            to: toNumber  // Send to your business number
         });
 
         console.log('Contact notification sent:', msg.sid);
@@ -56,7 +62,7 @@ const sendWhatsAppBookingNotification = async (bookingData) => {
         const message = await client.messages.create({
             body: `🏋️‍♂️ New Booking!\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
             from: fromNumber,
-            to: fromNumber  // Using fromNumber temporarily until businessNumber is verified
+            to: toNumber  // Send to your business number
         });
 
         console.log('Booking notification sent:', message.sid);
@@ -76,14 +82,14 @@ const sendWhatsAppConfirmation = async (bookingData) => {
         const businessMsg = await client.messages.create({
             body: `🎯 New Booking!\nName: ${name}\nDate: ${preferredDate}\nTime: ${preferredTime}\nLocation: ${location}`,
             from: fromNumber,
-            to: fromNumber  // Using fromNumber temporarily until businessNumber is verified
+            to: toNumber  // Send to your business number
         });
 
         console.log('Business notification sent:', businessMsg.sid);
 
         return {
             businessSid: businessMsg.sid,
-            userSid: null
+            userSid: null // We'll implement user notification later
         };
     } catch (error) {
         console.error('WhatsApp confirmation error:', error);
@@ -91,7 +97,6 @@ const sendWhatsAppConfirmation = async (bookingData) => {
     }
 };
 
-// Export all functions
 module.exports = {
     sendWhatsAppBookingNotification,
     sendWhatsAppContactNotification,
