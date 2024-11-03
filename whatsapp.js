@@ -119,6 +119,56 @@ async function sendWhatsAppConfirmation(bookingData) {
 }
 
 
+async function sendContactFormConfirmation(contactData) {
+    const { name, email, message, phone } = contactData;
+
+    const formattedPhone = phone.startsWith('+') ? phone : 
+                          phone.startsWith('91') ? '+' + phone :
+                          '+91' + phone.replace(/^0+/, '');
+
+    console.log('Processing contact form:', { 
+        name, 
+        phone: formattedPhone 
+    });
+
+    try {
+        // 1. Send confirmation to user
+        const userMsg = await client.messages.create({
+            contentSid: TEMPLATES.USER_CONTACT_CONFIRMATION,
+            contentVariables: JSON.stringify({
+                1: name,
+                2: message
+            }),
+            from: fromNumber,
+            to: `whatsapp:${formattedPhone}`
+        });
+        console.log('Contact confirmation sent to user:', userMsg.sid);
+
+        // 2. Send notification to business
+        const businessMsg = await client.messages.create({
+            contentSid: TEMPLATES.BUSINESS_CONTACT_NOTIFICATION,
+            contentVariables: JSON.stringify({
+                1: name,
+                2: email,
+                3: formattedPhone,
+                4: message
+            }),
+            from: fromNumber,
+            to: businessNumber
+        });
+        console.log('Contact notification sent to business:', businessMsg.sid);
+
+        return { userSid: userMsg.sid, businessSid: businessMsg.sid };
+    } catch (error) {
+        console.error('Contact notification error:', {
+            code: error.code,
+            message: error.message,
+            details: error.moreInfo
+        });
+        throw error;
+    }
+}
+
 async function checkMessageStatus(messageSid) {
     try {
         const message = await client.messages(messageSid).fetch();
@@ -132,6 +182,7 @@ async function checkMessageStatus(messageSid) {
 
 module.exports = {
     sendWhatsAppConfirmation,
+    sendContactFormConfirmation,
     checkMessageStatus,
     sendWhatsAppContactNotification
 };
