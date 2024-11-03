@@ -132,7 +132,6 @@ async function checkMessageStatus(messageSid) {
 
 module.exports = {
     sendWhatsAppConfirmation,
-    sendContactFormConfirmation,
     checkMessageStatus,
     sendWhatsAppContactNotification
 };
