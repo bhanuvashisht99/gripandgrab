@@ -1,7 +1,7 @@
 {
   "name": "gripandgrab-website",
   "version": "1.0.0",
-  "type": "module",
+  
   "description": "Grip&Grab Fitness Website",
   "main": "server.js",
   "scripts": {
